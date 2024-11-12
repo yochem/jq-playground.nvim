@@ -1,6 +1,6 @@
 # jq-playground.nvim
 
-> Interact with jq in Neovim, using interactive buffers
+> Interact with jq in Neovim using interactive buffers
 
 ![Example screenshot](example/screenshot.png)
 
@@ -9,36 +9,19 @@ Like [jqplay.org](https://jqplay.org) or Neovims builtin Treesitter playground
 
 ## Installation
 
-### Lazy.nvim
+The GitHub repository is at `"yochem/jq-playground.nvim"`. Use that in your
+package manager.
 
-Using the default configuration with
-[lazy.nvim](https://github.com/folke/lazy.nvim) as package manager:
-
-```lua
-{
-  "yochem/jq-playground.nvim"
-}
-```
-
-This will lazy-load the plugin on `:JqPlayground`, as defined in the
-[packspec](https://github.com/neovim/packspec) (which Lazy supports) in this
-repo: [pkg.json](./pkg.json).
-
-### Other Package Managers
-
-If you use another package manager than lazy.nvim, make sure to run the setup
-function to register the `:JqPlayground` command:
-
-```lua
-require("jq-playground").setup()
-```
+The plugin is lazy-loaded on `:JqPlayground` and does not require any
+lazy-loading configuration by the user.
 
 ## Configuration
 
-These are the options, along with their defaults. Set `opts` in lazy to this
-table, or pass the table to the `setup()` function.
+All possible configuration and the default values can be found in
+[`jq-playground/config.lua`](./lua/jq-playground/config.lua), but this is it:
 
 ```lua
+-- This is the default. No setup() is required if you use the default.
 {
   output_window = {
     split_direction = "right",
@@ -50,58 +33,63 @@ table, or pass the table to the `setup()` function.
     width = nil,
     height = 0.3,
   },
-  query_keymaps = {
-    { "n", "<CR>" },
-  },
-})
+  disable_default_keymap = false,
+}
 ```
 
 - `split_direction`: can be `"left"`, `"right"`, `"above"` or `"below"`. The
   split direction of the output window is relative to the input window, and the
-  query window is relative to the output window.
+  query window is relative to the output window (they open after each other).
 - `width` and `height`:
   - `nil`: use the default (half of current width/height)
   - `0-1`: percentage of current width/height
   - `>1`: absolute width/height in number of characters or lines
-- `query_keymaps`: keymaps to refresh the output buffer. Should be given as a
-  table of first two arguments for `vim.keymap.set`. Changing this setting will
-  override the default keymap (`<CR>` in normal mode).
+- `disable_default_keymap`: disables default `<CR>` map in the query window
 
-## `:JqPlayground`
+Their are two commands that can be remapped: the user-command `:JqPlayground`
+that starts the playground, and `<Plug>(JqPlaygroundRunQuery)`, that runs the
+current query when pressed with the cursor in the query window. Remap them the
+following way:
+
+```lua
+vim.keymap.set("n", "<leader>jq", vim.cmd.JqPlayground)
+
+vim.keymap.set("n", "R", "<Plug>(JqPlaygroundRunQuery)")
+```
+
+## Usage
 
 Navigate to a JSON file, and execute the command `:JqPlayground`. Two scratch
 buffers will be opened: a buffer for the JQ-filter and one for displaying the
-results. Simply press `<CR>` (enter), or your keymap from setup, in the filter
+results. Simply press `<CR>` (enter), or your keymap from setup, in the query
 window to refresh the results buffer.
 
 You can also provide a filename to the `:JqPlayground` command. This is useful
 if the JSON file is very large and you don't want to open it in Neovim
 directly:
 
-```
+```vim
 :JqPlayground sample.json
 ```
 
 ## Tips
 
+Some random tips of useful builtin Nvim functionality that could be useful.
+
 If you have a saved filter that you want to load into the filter window, then
 run:
 
-```
+```vim
 :r /path/to/some/query.jq
 ```
 
 If you want to save the current query or output json, navigate to that buffer
 and run:
 
-```
-:w /path/to/save/{query.jq,output.json}
-```
-
-If you want to use a keymap instead of the `:JqPlayground` command, use this:
-
-```lua
-vim.keymap.set('n', '<leader>jq', vim.cmd.JqPlayground)
+```vim
+:w path/to/save/query.jq
+" or:
+:w path/to/save/output.json
 ```
 
 Start the JQ editor from the command line without loading the input file:

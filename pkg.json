@@ -8,9 +8,5 @@
     "type": "git",
     "url": "https://github.com/yochem/jq-playground.nvim"
   },
-  "dependencies": {},
-  "lazy": {
-    "opts": {},
-    "cmd": "JqPlayground"
-  }
+  "dependencies": {}
 }
