@@ -8,10 +8,14 @@ local function user_preferred_indent(json_bufnr)
   local prefer_tabs = not vim.bo[json_bufnr].expandtab
   if prefer_tabs then
     return { "--tab" }
-  else
-    local indent_width = vim.bo[json_bufnr].softtabstop
+  end
+
+  local indent_width = vim.bo[json_bufnr].tabstop
+  if 0 < indent_width and indent_width < 8 then
     return { "--indent", indent_width }
   end
+
+  return {}
 end
 
 -- TODO: refactor
