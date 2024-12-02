@@ -97,3 +97,9 @@ Start the JQ editor from the command line without loading the input file:
 ```
 $ nvim +'JqPlayground input.json'
 ```
+
+## Credits
+
+This is a fork of [jrop/jq.nvim](https://github.com/jrop/jq.nvim). All work
+done prior to commit 4c24eb910752ec59585dd90cf20af80a9c60c1e8 are licensed
+under the MIT license by them. Original license is in the linked repository.
