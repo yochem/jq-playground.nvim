@@ -23,7 +23,6 @@ local function run_query(cmd, input, query_bufnr, output_bufnr)
   local cli_args = vim.deepcopy(cmd)
   local filter_lines = vim.api.nvim_buf_get_lines(query_bufnr, 0, -1, false)
   local filter = table.concat(filter_lines, "\n")
-  vim.print(cli_args)
   table.insert(cli_args, filter)
   vim.list_extend(cli_args, user_preferred_indent(output_bufnr))
   local stdin = nil
@@ -43,18 +42,20 @@ local function run_query(cmd, input, query_bufnr, output_bufnr)
   else
     show_error("invalid input: " .. input)
   end
-  local ok, process = pcall(vim.system, cli_args, { stdin = stdin })
+
+  local on_exit = function(result)
+    vim.schedule(function ()
+      local out = result.code == 0 and result.stdout or result.stderr
+      local lines = vim.split(out, "\n", { plain = true })
+      vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, lines)
+    end)
+  end
+
+  local ok, _ = pcall(vim.system, cli_args, { stdin = stdin }, on_exit)
 
   if not ok then
     show_error("jq is not installed or not on your $PATH")
-    return
   end
-
-  local result = process:wait()
-  local output = result.code == 0 and result.stdout or result.stderr
-
-  local lines = vim.split(output, "\n", { plain = true })
-  vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, lines)
 end
 
 local function resolve_winsize(num, max)
