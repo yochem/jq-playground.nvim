@@ -19,11 +19,13 @@ local function user_preferred_indent(json_bufnr)
 end
 
 -- TODO: refactor
-local function run_query(input, query_bufnr, output_bufnr)
+local function run_query(cmd, input, query_bufnr, output_bufnr)
+  local cli_args = vim.deepcopy(cmd)
   local filter_lines = vim.api.nvim_buf_get_lines(query_bufnr, 0, -1, false)
   local filter = table.concat(filter_lines, "\n")
-  local cmd = { "jq", filter }
-  vim.list_extend(cmd, user_preferred_indent(output_bufnr))
+  vim.print(cli_args)
+  table.insert(cli_args, filter)
+  vim.list_extend(cli_args, user_preferred_indent(output_bufnr))
   local stdin = nil
 
   if type(input) == "number" and vim.api.nvim_buf_is_valid(input) then
@@ -32,16 +34,16 @@ local function run_query(input, query_bufnr, output_bufnr)
 
     if (not modified) and fname ~= "" then
       -- the following should be faster as it lets jq read the file contents
-      table.insert(cmd, fname)
+      table.insert(cli_args, fname)
     else
       stdin = vim.api.nvim_buf_get_lines(input, 0, -1, false)
     end
   elseif type(input) == "string" and vim.fn.filereadable(input) == 1 then
-    table.insert(cmd, input)
+    table.insert(cli_args, input)
   else
     show_error("invalid input: " .. input)
   end
-  local ok, process = pcall(vim.system, cmd, { stdin = stdin })
+  local ok, process = pcall(vim.system, cli_args, { stdin = stdin })
 
   if not ok then
     show_error("jq is not installed or not on your $PATH")
@@ -106,7 +108,7 @@ function M.init_playground(filename)
   vim.cmd.startinsert()
 
   local run_jq_query = function()
-    run_query(filename or input_json_bufnr, query_bufnr, output_json_bufnr)
+    run_query(config.cmd, filename or input_json_bufnr, query_bufnr, output_json_bufnr)
   end
 
   -- TODO: deprecate
