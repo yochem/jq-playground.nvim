@@ -99,6 +99,8 @@ Start the JQ editor from the command line without loading the input file:
 
 ```
 $ nvim +'JqPlayground input.json'
+$ # or put this in your bashrc:
+$ jqplay() { nvim +"JqPlayground $1"; }
 ```
 
 ## Credits
