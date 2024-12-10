@@ -1,6 +1,7 @@
 local M = {}
 
 M.default_config = {
+  cmd = { "jq" },
   output_window = {
     split_direction = "right",
     width = nil,

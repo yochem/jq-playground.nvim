@@ -23,6 +23,7 @@ All possible configuration and the default values can be found in
 ```lua
 -- This is the default. No setup() is required if you use the default.
 {
+  cmd = { "jq" },
   output_window = {
     split_direction = "right",
     width = nil,
@@ -37,6 +38,8 @@ All possible configuration and the default values can be found in
 }
 ```
 
+- `cmd`: (path to) jq executable. This can be another jq implementation like
+  [gojq](https://github.com/itchyny/gojq) or [jaq](https://lib.rs/crates/jaq).
 - `split_direction`: can be `"left"`, `"right"`, `"above"` or `"below"`. The
   split direction of the output window is relative to the input window, and the
   query window is relative to the output window (they open after each other).
