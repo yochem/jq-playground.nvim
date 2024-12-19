@@ -10,7 +10,18 @@ Like [jqplay.org](https://jqplay.org) or Neovims builtin Treesitter playground
 ## Installation
 
 The GitHub repository is at `"yochem/jq-playground.nvim"`. Use that in your
-package manager.
+package manager. For example with
+[Lazy.nvim](https://github.com/folke/lazy.nvim) and
+[gojq](https://github.com/itchyny/gojq) as jq implementation:
+
+```lua
+{
+  "yochem/jq-playground.nvim",
+  opts = {
+    cmd = { "gojq" },
+  }
+}
+```
 
 The plugin is lazy-loaded on `:JqPlayground` and does not require any
 lazy-loading configuration by the user.
@@ -38,13 +49,15 @@ All possible configuration and the default values can be found in
 }
 ```
 
-- `cmd`: (path to) jq executable. This can be another jq implementation like
-  [gojq](https://github.com/itchyny/gojq) or [jaq](https://lib.rs/crates/jaq).
+- `cmd`: (path to) jq executable and custom flags you might add. This can be
+  another jq implementation like [gojq](https://github.com/itchyny/gojq) or
+  [jaq](https://lib.rs/crates/jaq).
 - `split_direction`: can be `"left"`, `"right"`, `"above"` or `"below"`. The
-  split direction of the output window is relative to the input window, and the
-  query window is relative to the output window (they open after each other).
+  split direction of the output window is relative to the input window, and
+  that of the query window is relative to the output window (they open after
+  each other).
 - `width` and `height`:
-  - `nil`: use the default (half of current width/height)
+  - `nil`: use the default: split in half
   - `0-1`: percentage of current width/height
   - `>1`: absolute width/height in number of characters or lines
 - `disable_default_keymap`: disables default `<CR>` map in the query window
@@ -55,8 +68,10 @@ current query when pressed with the cursor in the query window. Remap them the
 following way:
 
 ```lua
+-- start the playground
 vim.keymap.set("n", "<leader>jq", vim.cmd.JqPlayground)
 
+-- when in the query window, run the jq query
 vim.keymap.set("n", "R", "<Plug>(JqPlaygroundRunQuery)")
 ```
 
@@ -77,13 +92,13 @@ directly:
 
 ## Tips
 
-Some random tips of useful builtin Nvim functionality that could be useful.
+Some random tips that you may find useful while using this plugin.
 
-If you have a saved filter that you want to load into the filter window, then
-run:
+If you have a saved jq program that you want to load into the filter window,
+then run:
 
 ```vim
-:r /path/to/some/query.jq
+:r path/to/some/query.jq
 ```
 
 If you want to save the current query or output json, navigate to that buffer
