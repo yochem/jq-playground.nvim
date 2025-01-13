@@ -118,6 +118,26 @@ $ # or put this in your bashrc:
 $ jqplay() { nvim +"JqPlayground $1"; }
 ```
 
+How to connect the jq language server
+
+If you want features like autocompletion or linting while editing your jq filter, you can use the [jq-lsp](https://github.com/wader/jq-lsp) language server. While `jqls` is available in `nvim-lspconfig`, it won’t work correctly for this plugin because `nvim-lspconfig` explicitly disables support for buffers with `buftype=nofile` (see [PR #1064](https://github.com/neovim/nvim-lspconfig/pull/1064)).
+Instead, you can manually start `jq-lsp` with the following autocommand:
+
+```lua
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "jq",
+  callback = function(args)
+    vim.lsp.start({
+      name = "jqls",
+      cmd = { vim.fn.expand("~/.local/share/nvim/mason/bin/jq-lsp") },
+      root_dir = vim.fn.getcwd(),
+    })
+  end,
+})
+```
+
+Make sure you install jq-lsp first (e.g., via Mason or Go). 
+
 ## Credits
 
 This is a fork of [jrop/jq.nvim](https://github.com/jrop/jq.nvim). All work
