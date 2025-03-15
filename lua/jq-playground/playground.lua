@@ -69,9 +69,12 @@ local function resolve_winsize(num, max)
 end
 
 local function create_split_scratch_buf(bufopts, winopts)
-  local bufnr = vim.api.nvim_create_buf(false, true)
-  vim.bo[bufnr].filetype = bufopts.filetype
-  vim.api.nvim_buf_set_name(bufnr, bufopts.name)
+  local bufnr = vim.fn.bufnr(bufopts.name)
+  if bufnr == -1 then
+    bufnr = vim.api.nvim_create_buf(false, true)
+    vim.bo[bufnr].filetype = bufopts.filetype
+    vim.api.nvim_buf_set_name(bufnr, bufopts.name)
+  end
 
   local height = resolve_winsize(winopts.height, vim.api.nvim_win_get_height(0))
   local width = resolve_winsize(winopts.width, vim.api.nvim_win_get_width(0))
@@ -99,6 +102,7 @@ function M.init_playground(filename)
     filetype = "jq",
   }, config.query_window)
 
+  vim.api.nvim_buf_set_lines(output_json_bufnr, 0, -1, false, {})
   vim.api.nvim_buf_set_lines(query_bufnr, 0, -1, false, {
     -- TODO: change text
     "# JQ filter: press set keymap (default <CR> in normal mode) to execute.",
