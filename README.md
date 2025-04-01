@@ -9,6 +9,8 @@ Like [jqplay.org](https://jqplay.org) or Neovim's builtin Treesitter playground
 
 ## Installation
 
+This plugin requires Nvim 0.10+.
+
 The GitHub repository is at `"yochem/jq-playground.nvim"`. Use that in your
 package manager. For example with
 [Lazy.nvim](https://github.com/folke/lazy.nvim):
