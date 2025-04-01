@@ -68,19 +68,19 @@ local function resolve_winsize(num, max)
   end
 end
 
-local function create_split_scratch_buf(bufopts, winopts)
-  local bufnr = vim.fn.bufnr(bufopts.name)
+local function create_split_buf(opts)
+  local bufnr = vim.fn.bufnr(opts.name)
   if bufnr == -1 then
-    bufnr = vim.api.nvim_create_buf(false, true)
-    vim.bo[bufnr].filetype = bufopts.filetype
-    vim.api.nvim_buf_set_name(bufnr, bufopts.name)
+    bufnr = vim.api.nvim_create_buf(true, opts.scratch)
+    vim.bo[bufnr].filetype = opts.filetype
+    vim.api.nvim_buf_set_name(bufnr, opts.name)
   end
 
-  local height = resolve_winsize(winopts.height, vim.api.nvim_win_get_height(0))
-  local width = resolve_winsize(winopts.width, vim.api.nvim_win_get_width(0))
+  local height = resolve_winsize(opts.height, vim.api.nvim_win_get_height(0))
+  local width = resolve_winsize(opts.width, vim.api.nvim_win_get_width(0))
 
   local winid = vim.api.nvim_open_win(bufnr, true, {
-    split = winopts.split_direction,
+    split = opts.split_direction,
     width = width,
     height = height,
   })
@@ -92,15 +92,8 @@ function M.init_playground(filename)
   local config = require("jq-playground.config").config
   local input_json_bufnr = vim.api.nvim_get_current_buf()
 
-  local output_json_bufnr, _ = create_split_scratch_buf({
-    name = "jq output",
-    filetype = "json",
-  }, config.output_window)
-
-  local query_bufnr, winid = create_split_scratch_buf({
-    name = "jq query editor",
-    filetype = "jq",
-  }, config.query_window)
+  local output_json_bufnr, _ = create_split_buf(config.output_window)
+  local query_bufnr, winid = create_split_buf(config.query_window)
 
   vim.api.nvim_buf_set_lines(output_json_bufnr, 0, -1, false, {})
   vim.api.nvim_buf_set_lines(query_bufnr, 0, -1, false, {

@@ -4,32 +4,28 @@
 
 ![Example screenshot](example/screenshot.png)
 
-Like [jqplay.org](https://jqplay.org) or Neovims builtin Treesitter playground
+Like [jqplay.org](https://jqplay.org) or Neovim's builtin Treesitter playground
 ([`:InspectTree`](https://neovim.io/doc/user/treesitter.html#%3AInspectTree)).
 
 ## Installation
 
 The GitHub repository is at `"yochem/jq-playground.nvim"`. Use that in your
 package manager. For example with
-[Lazy.nvim](https://github.com/folke/lazy.nvim) and
-[gojq](https://github.com/itchyny/gojq) as jq implementation:
+[Lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
   "yochem/jq-playground.nvim",
-  opts = {
-    cmd = { "gojq" },
-  }
 }
 ```
 
 The plugin is lazy-loaded on `:JqPlayground` and does not require any
-lazy-loading configuration by the user.
+lazy-loading by the user.
 
 ## Configuration
 
 All possible configuration and the default values can be found in
-[`jq-playground/config.lua`](./lua/jq-playground/config.lua), but this is it:
+[`config.lua`](./lua/jq-playground/config.lua), but this is it:
 
 ```lua
 -- This is the default. No setup() is required if you use the default.
@@ -39,11 +35,17 @@ All possible configuration and the default values can be found in
     split_direction = "right",
     width = nil,
     height = nil,
+    scratch = true,
+    filetype = "json",
+    name = "jq output",
   },
   query_window = {
-    split_direction = "bottom",
+    split_direction = "below",
     width = nil,
     height = 0.3,
+    scratch = false,
+    filetype = "jq",
+    name = "jq query editor",
   },
   disable_default_keymap = false,
 }
@@ -60,9 +62,11 @@ All possible configuration and the default values can be found in
   - `nil`: use the default: split in half
   - `0-1`: percentage of current width/height
   - `>1`: absolute width/height in number of characters or lines
+- `scratch`: if the buffer should be a [scratch
+  buffer](https://neovim.io/doc/user/windows.html#scratch-buffer).
 - `disable_default_keymap`: disables default `<CR>` map in the query window
 
-Their are two commands that can be remapped: the user-command `:JqPlayground`
+There are two commands that can be remapped: the user-command `:JqPlayground`
 that starts the playground, and `<Plug>(JqPlaygroundRunQuery)`, that runs the
 current query when pressed with the cursor in the query window. Remap them the
 following way:
@@ -106,11 +110,11 @@ and run:
 
 ```vim
 :w path/to/save/query.jq
-" or:
+" or for the output json:
 :w path/to/save/output.json
 ```
 
-Start the JQ editor from the command line without loading the input file:
+Start the jq editor from the command line without loading the input file:
 
 ```
 $ nvim +'JqPlayground input.json'
