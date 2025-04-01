@@ -117,24 +117,6 @@ function M.init_playground(filename)
     run_query(config.cmd, filename or input_json_bufnr, query_bufnr, output_json_bufnr)
   end
 
-  -- TODO: deprecate
-  if config.query_keymaps ~= nil then
-    vim.deprecate(
-      "config.query_keymaps",
-      "vim.keymap.set with <Plug>(JqPlaygroundRunQuery)",
-      "0.3",
-      "jq-playground",
-      false
-    )
-    for _, mapping in ipairs(config.query_keymaps) do
-      vim.keymap.set(mapping[1], mapping[2], run_jq_query, {
-        buffer = query_bufnr,
-        silent = true,
-        desc = "Run jq query",
-      })
-    end
-  end
-
   vim.keymap.set({ "n", "i" }, "<Plug>(JqPlaygroundRunQuery)", run_jq_query, {
     buffer = query_bufnr,
     silent = true,
