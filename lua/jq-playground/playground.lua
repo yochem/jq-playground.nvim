@@ -1,4 +1,6 @@
 local M = {}
+local ns = vim.api.nvim_create_namespace("jq-playground")
+local augroup = vim.api.nvim_create_augroup("jq-playground", {})
 
 local function show_error(msg)
   vim.notify("jq-playground: " .. msg, vim.log.levels.ERROR, {})
@@ -93,17 +95,23 @@ function M.init_playground(filename)
   local input_json_bufnr = vim.api.nvim_get_current_buf()
 
   local output_json_bufnr, _ = create_split_buf(config.output_window)
-  local query_bufnr, winid = create_split_buf(config.query_window)
+  local query_bufnr, _ = create_split_buf(config.query_window)
 
   vim.api.nvim_buf_set_lines(output_json_bufnr, 0, -1, false, {})
-  vim.api.nvim_buf_set_lines(query_bufnr, 0, -1, false, {
-    -- TODO: change text
-    "# JQ filter: press set keymap (default <CR> in normal mode) to execute.",
-    "",
-    "",
+
+  vim.api.nvim_buf_set_extmark(query_bufnr, ns, 0, 0, {
+    virt_text = { { "Run your query with <CR>.", "Conceal" } },
   })
-  vim.api.nvim_win_set_cursor(winid, { 3, 0 })
-  vim.cmd.startinsert()
+
+  -- Delete hint about running the query as soon as the user does something
+  vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertEnter' }, {
+    once = true,
+    group = augroup,
+    buffer = query_bufnr,
+    callback = function ()
+      vim.api.nvim_buf_clear_namespace(query_bufnr, ns, 0, -1)
+    end,
+  })
 
   local run_jq_query = function()
     run_query(config.cmd, filename or input_json_bufnr, query_bufnr, output_json_bufnr)
