@@ -1,6 +1,6 @@
 # jq-playground.nvim
 
-> Interact with jq in Neovim using interactive buffers
+> Interact with jq and yq in Neovim using interactive buffers
 
 ![Example screenshot](example/screenshot.png)
 
@@ -32,28 +32,31 @@ All possible configuration and the default values can be found in
 ```lua
 -- This is the default. No setup() is required if you use the default.
 {
-  cmd = { "jq" },
+  json_cmd = { "jq" },
+  yaml_cmd = { "yq" },
   output_window = {
     split_direction = "right",
     width = nil,
     height = nil,
     scratch = true,
-    filetype = "json",
-    name = "jq output",
+    json_filetype = "json",
+    yaml_filetype = "yaml",
+    name = "output",
   },
   query_window = {
     split_direction = "below",
     width = nil,
     height = 0.3,
     scratch = false,
-    filetype = "jq",
-    name = "jq query editor",
+    json_filetype = "jq",
+    yaml_filetype = "yq",
+    name = "query editor",
   },
   disable_default_keymap = false,
 }
 ```
 
-- `cmd`: (path to) jq executable and custom flags you might add. This can be
+- `json_cmd | yaml_cmd`: (path to) jq executable and custom flags you might add. This can be
   another jq implementation like [gojq](https://github.com/itchyny/gojq) or
   [jaq](https://lib.rs/crates/jaq).
 - `split_direction`: can be `"left"`, `"right"`, `"above"` or `"below"`. The

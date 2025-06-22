@@ -46,7 +46,7 @@ local function run_query(cmd, input, query_bufnr, output_bufnr)
   end
 
   local on_exit = function(result)
-    vim.schedule(function ()
+    vim.schedule(function()
       local out = result.code == 0 and result.stdout or result.stderr
       local lines = vim.split(out, "\n", { plain = true })
       vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, lines)
@@ -56,7 +56,7 @@ local function run_query(cmd, input, query_bufnr, output_bufnr)
   local ok, _ = pcall(vim.system, cli_args, { stdin = stdin }, on_exit)
 
   if not ok then
-    show_error("jq is not installed or not on your $PATH")
+    show_error(cli_args[1] .. " is not installed or not on your $PATH")
   end
 end
 
@@ -90,34 +90,57 @@ local function create_split_buf(opts)
   return bufnr, winid
 end
 
+local function set_config(config, filetype)
+  if filetype == "json" then
+    config.cmd = config.json_cmd
+    config.output_window.filetype = config.output_window.json_filetype
+    config.query_window.filetype = config.query_window.json_filetype
+  elseif filetype == "yaml" then
+    config.cmd = config.yaml_cmd
+    config.output_window.filetype = config.output_window.yaml_filetype
+    config.query_window.filetype = config.query_window.yaml_filetype
+  end
+  return config
+end
+
 function M.init_playground(filename)
   local config = require("jq-playground.config").config
-  local input_json_bufnr = vim.api.nvim_get_current_buf()
+  local input_bufnr = vim.api.nvim_get_current_buf()
+  local filetype = vim.api.nvim_get_option_value("filetype", { buf = input_bufnr })
+  if filetype ~= "json" and filetype ~= "yaml" then
+    vim.ui.select({ "json", "yaml" }, {
+      prompt = "Please select a filetype",
+    }, function(type)
+      config = set_config(config, type)
+    end)
+  else
+    config = set_config(config, filetype)
+  end
 
-  local output_json_bufnr, _ = create_split_buf(config.output_window)
+  local output_bufnr, _ = create_split_buf(config.output_window)
   local query_bufnr, _ = create_split_buf(config.query_window)
 
-  vim.api.nvim_buf_set_lines(output_json_bufnr, 0, -1, false, {})
+  vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, {})
 
   vim.api.nvim_buf_set_extmark(query_bufnr, ns, 0, 0, {
     virt_text = { { "Run your query with <CR>.", "Conceal" } },
   })
 
   -- Delete hint about running the query as soon as the user does something
-  vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertEnter' }, {
+  vim.api.nvim_create_autocmd({ "TextChanged", "InsertEnter" }, {
     once = true,
     group = augroup,
     buffer = query_bufnr,
-    callback = function ()
+    callback = function()
       vim.api.nvim_buf_clear_namespace(query_bufnr, ns, 0, -1)
     end,
   })
 
-  local run_jq_query = function()
-    run_query(config.cmd, filename or input_json_bufnr, query_bufnr, output_json_bufnr)
+  local run_query_with_file = function()
+    run_query(config.cmd, filename or input_bufnr, query_bufnr, output_bufnr)
   end
 
-  vim.keymap.set({ "n", "i" }, "<Plug>(JqPlaygroundRunQuery)", run_jq_query, {
+  vim.keymap.set({ "n", "i" }, "<Plug>(JqPlaygroundRunQuery)", run_query_with_file, {
     buffer = query_bufnr,
     silent = true,
     desc = "JqPlaygroundRunQuery",
