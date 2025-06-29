@@ -6,6 +6,9 @@
 
 Like [jqplay.org](https://jqplay.org) or Neovim's builtin Treesitter playground
 ([`:InspectTree`](https://neovim.io/doc/user/treesitter.html#%3AInspectTree)).
+Also supports YAML via `yq` and or many others if you
+[configure](#configuration) it to use [fq](https://github.com/wader/fq) and set
+output filetype appropriately.
 
 ## Installation
 
@@ -16,9 +19,7 @@ package manager. For example with
 [Lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
-{
-  "yochem/jq-playground.nvim",
-}
+{ "yochem/jq-playground.nvim" }
 ```
 
 The plugin is lazy-loaded on `:JqPlayground` and does not require any
@@ -55,7 +56,9 @@ All possible configuration and the default values can be found in
 
 - `cmd`: (path to) jq executable and custom flags you might add. This can be
   another jq implementation like [gojq](https://github.com/itchyny/gojq) or
-  [jaq](https://lib.rs/crates/jaq).
+  [jaq](https://lib.rs/crates/jaq). **NOTE**: this is ignored and set to `yq`
+  when the input filetype is detected as YAML. This behaviour might change in
+  the future.
 - `split_direction`: can be `"left"`, `"right"`, `"above"` or `"below"`. The
   split direction of the output window is relative to the input window, and
   that of the query window is relative to the output window (they open after

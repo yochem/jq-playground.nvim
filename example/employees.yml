@@ -1,0 +1,21 @@
+employees:
+  - id: 1
+    firstName: Krish
+    lastName: Lee
+    phoneNumber: '123456'
+  - id: 2
+    firstName: racks
+    lastName: jacson
+    phoneNumber: '123456'
+  - id: 3
+    firstName: denial
+    lastName: roast
+    phoneNumber: '33333333'
+  - id: 4
+    firstName: devid
+    lastName: neo
+    phoneNumber: '222222222'
+  - id: 5
+    firstName: jone
+    lastName: mac
+    phoneNumber: '111111111'
