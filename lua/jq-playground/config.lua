@@ -16,7 +16,7 @@ M.default_config = {
     height = 0.3,
     scratch = false,
     filetype = "jq",
-    name = "jq query editor",
+    name = "query editor",
   },
   disable_default_keymap = false,
 }

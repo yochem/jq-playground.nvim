@@ -115,10 +115,16 @@ local function virt_text_hint(buf, hint)
 end
 
 function M.init_playground(filename, cfg)
-  -- 1. filename or curbuf
-  -- 2. json/yaml
-  -- 3. check readable and stuff?
   local curbuf = vim.api.nvim_get_current_buf()
+
+  -- check if we're working with YAML
+  local match_args = filename and { filename = filename } or { buf = curbuf }
+  if vim.filetype.match(match_args) == "yaml" then
+    cfg.cmd = { "yq" }
+    cfg.output_window.filetype = "yaml"
+    cfg.output_window.name = "yq output"
+    cfg.query_window.filetype = "yq"
+  end
 
   -- Create output buffer first
   local output_buf, _ = create_split_buf(cfg.output_window)
@@ -126,9 +132,9 @@ function M.init_playground(filename, cfg)
 
   -- And then query buffer
   local query_buf, _ = create_split_buf(cfg.query_window)
-  virt_text_hint(query_buf,  "Run your query with <CR>.")
+  virt_text_hint(query_buf, "Run your query with <CR>.")
 
-  vim.keymap.set({ "n", "i" }, "<Plug>(JqPlaygroundRunQuery)", function ()
+  vim.keymap.set({ "n", "i" }, "<Plug>(JqPlaygroundRunQuery)", function()
     run_query(cfg.cmd, filename or curbuf, query_buf, output_buf)
   end, {
     buffer = query_buf,
