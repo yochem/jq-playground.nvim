@@ -6,13 +6,13 @@ local function show_error(msg)
   vim.notify("jq-playground: " .. msg, vim.log.levels.ERROR, {})
 end
 
-local function user_preferred_indent(json_bufnr)
-  local prefer_tabs = not vim.bo[json_bufnr].expandtab
+local function user_preferred_indent(buf)
+  local prefer_tabs = not vim.bo[buf].expandtab
   if prefer_tabs then
     return { "--tab" }
   end
 
-  local indent_width = vim.bo[json_bufnr].tabstop
+  local indent_width = vim.bo[buf].tabstop
   if 0 < indent_width and indent_width < 8 then
     return { "--indent", indent_width }
   end
@@ -20,14 +20,10 @@ local function user_preferred_indent(json_bufnr)
   return {}
 end
 
--- TODO: refactor
-local function run_query(cmd, input, query_bufnr, output_bufnr)
-  local cli_args = vim.deepcopy(cmd)
-  local filter_lines = vim.api.nvim_buf_get_lines(query_bufnr, 0, -1, false)
-  local filter = table.concat(filter_lines, "\n")
-  table.insert(cli_args, filter)
-  vim.list_extend(cli_args, user_preferred_indent(output_bufnr))
-  local stdin = nil
+local function input_args(input)
+  if type(input) == "string" and vim.fn.filereadable(input) == 1 then
+    return input, nil
+  end
 
   if type(input) == "number" and vim.api.nvim_buf_is_valid(input) then
     local modified = vim.bo[input].modified
@@ -35,26 +31,38 @@ local function run_query(cmd, input, query_bufnr, output_bufnr)
 
     if (not modified) and fname ~= "" then
       -- the following should be faster as it lets jq read the file contents
-      table.insert(cli_args, fname)
+      return input, nil
     else
-      stdin = vim.api.nvim_buf_get_lines(input, 0, -1, false)
+      return nil, vim.api.nvim_buf_get_lines(input, 0, -1, false)
     end
-  elseif type(input) == "string" and vim.fn.filereadable(input) == 1 then
-    table.insert(cli_args, input)
-  else
-    show_error("invalid input: " .. input)
+  end
+
+  show_error("invalid input: " .. input)
+end
+
+local function run_query(cmd, input, query_buf, output_buf)
+  local cli_args = vim.deepcopy(cmd)
+
+  local filter_lines = vim.api.nvim_buf_get_lines(query_buf, 0, -1, false)
+  local filter = table.concat(filter_lines, "\n")
+  table.insert(cli_args, filter)
+
+  vim.list_extend(cli_args, user_preferred_indent(output_buf))
+
+  local input_filename, stdin = input_args(input)
+  if input_filename then
+    table.insert(cli_args, input_filename)
   end
 
   local on_exit = function(result)
     vim.schedule(function ()
       local out = result.code == 0 and result.stdout or result.stderr
       local lines = vim.split(out, "\n", { plain = true })
-      vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, lines)
+      vim.api.nvim_buf_set_lines(output_buf, 0, -1, false, lines)
     end)
   end
 
   local ok, _ = pcall(vim.system, cli_args, { stdin = stdin }, on_exit)
-
   if not ok then
     show_error("jq is not installed or not on your $PATH")
   end
@@ -71,60 +79,65 @@ local function resolve_winsize(num, max)
 end
 
 local function create_split_buf(opts)
-  local bufnr = vim.fn.bufnr(opts.name)
-  if bufnr == -1 then
-    bufnr = vim.api.nvim_create_buf(true, opts.scratch)
-    vim.bo[bufnr].filetype = opts.filetype
-    vim.api.nvim_buf_set_name(bufnr, opts.name)
+  local buf = vim.fn.bufnr(opts.name)
+  if buf == -1 then
+    buf = vim.api.nvim_create_buf(true, opts.scratch)
+    vim.bo[buf].filetype = opts.filetype
+    vim.api.nvim_buf_set_name(buf, opts.name)
   end
 
   local height = resolve_winsize(opts.height, vim.api.nvim_win_get_height(0))
   local width = resolve_winsize(opts.width, vim.api.nvim_win_get_width(0))
 
-  local winid = vim.api.nvim_open_win(bufnr, true, {
+  local winid = vim.api.nvim_open_win(buf, true, {
     split = opts.split_direction,
     width = width,
     height = height,
   })
 
-  return bufnr, winid
+  return buf, winid
 end
 
-function M.init_playground(filename)
-  local config = require("jq-playground.config").config
-  local input_json_bufnr = vim.api.nvim_get_current_buf()
-
-  local output_json_bufnr, _ = create_split_buf(config.output_window)
-  local query_bufnr, _ = create_split_buf(config.query_window)
-
-  vim.api.nvim_buf_set_lines(output_json_bufnr, 0, -1, false, {})
-
-  vim.api.nvim_buf_set_extmark(query_bufnr, ns, 0, 0, {
-    virt_text = { { "Run your query with <CR>.", "Conceal" } },
+local function virt_text_hint(buf, hint)
+  vim.api.nvim_buf_set_extmark(buf, ns, 0, 0, {
+    virt_text = { { hint, "Conceal" } },
   })
 
   -- Delete hint about running the query as soon as the user does something
-  vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertEnter' }, {
+  vim.api.nvim_create_autocmd({ "TextChanged", "InsertEnter" }, {
     once = true,
     group = augroup,
-    buffer = query_bufnr,
-    callback = function ()
-      vim.api.nvim_buf_clear_namespace(query_bufnr, ns, 0, -1)
+    buffer = buf,
+    callback = function()
+      vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
     end,
   })
+end
 
-  local run_jq_query = function()
-    run_query(config.cmd, filename or input_json_bufnr, query_bufnr, output_json_bufnr)
-  end
+function M.init_playground(filename, cfg)
+  -- 1. filename or curbuf
+  -- 2. json/yaml
+  -- 3. check readable and stuff?
+  local curbuf = vim.api.nvim_get_current_buf()
 
-  vim.keymap.set({ "n", "i" }, "<Plug>(JqPlaygroundRunQuery)", run_jq_query, {
-    buffer = query_bufnr,
+  -- Create output buffer first
+  local output_buf, _ = create_split_buf(cfg.output_window)
+  vim.api.nvim_buf_set_lines(output_buf, 0, -1, false, {})
+
+  -- And then query buffer
+  local query_buf, _ = create_split_buf(cfg.query_window)
+  virt_text_hint(query_buf,  "Run your query with <CR>.")
+
+  vim.keymap.set({ "n", "i" }, "<Plug>(JqPlaygroundRunQuery)", function ()
+    run_query(cfg.cmd, filename or curbuf, query_buf, output_buf)
+  end, {
+    buffer = query_buf,
     silent = true,
     desc = "JqPlaygroundRunQuery",
   })
 
   -- To have a sensible default. Does not require user to define one
-  if not config.disable_default_keymap then
+  if not cfg.disable_default_keymap then
     vim.keymap.set({ "n" }, "<CR>", "<Plug>(JqPlaygroundRunQuery)", {
       desc = "Default for JqPlaygroundRunQuery",
     })
