@@ -31,7 +31,7 @@ local function input_args(input)
 
     if (not modified) and fname ~= "" then
       -- the following should be faster as it lets jq read the file contents
-      return input, nil
+      return fname, nil
     else
       return nil, vim.api.nvim_buf_get_lines(input, 0, -1, false)
     end
@@ -62,6 +62,7 @@ local function run_query(cmd, input, query_buf, output_buf)
     end)
   end
 
+  vim.print(cli_args)
   local ok, _ = pcall(vim.system, cli_args, { stdin = stdin }, on_exit)
   if not ok then
     show_error("jq is not installed or not on your $PATH")
