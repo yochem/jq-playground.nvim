@@ -115,10 +115,11 @@ local function virt_text_hint(buf, hint)
   })
 end
 
-function M.init_playground(filename, cfg)
-  local curbuf = vim.api.nvim_get_current_buf()
+function M.init_playground(filename)
+  local cfg = require('jq-playground.config').config
 
   -- check if we're working with YAML
+  local curbuf = vim.api.nvim_get_current_buf()
   local match_args = filename and { filename = filename } or { buf = curbuf }
   if vim.filetype.match(match_args) == "yaml" then
     cfg.cmd = { "yq" }

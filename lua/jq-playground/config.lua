@@ -21,4 +21,6 @@ M.default_config = {
   disable_default_keymap = false,
 }
 
+M.config = vim.deepcopy(M.default_config)
+
 return M
