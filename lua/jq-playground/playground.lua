@@ -62,7 +62,6 @@ local function run_query(cmd, input, query_buf, output_buf)
     end)
   end
 
-  vim.print(cli_args)
   local ok, _ = pcall(vim.system, cli_args, { stdin = stdin }, on_exit)
   if not ok then
     show_error("jq is not installed or not on your $PATH")
