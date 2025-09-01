@@ -6,6 +6,25 @@ local function show_error(msg)
   vim.notify("jq-playground: " .. msg, vim.log.levels.ERROR, {})
 end
 
+local function log_cmd(cmd)
+  -- 2nd and last argument are the query and json filename
+  local args = vim.deepcopy(cmd)
+  args[2] = "'" .. args[2] .. "'"
+  args[#args] = "'" .. args[#args] .. "'"
+  local s = table.concat(args, ' '):gsub('\n', '\\n')
+
+  local dir = vim.fn.stdpath('log')
+  local histfile = vim.fs.joinpath(dir, 'jq-playground_history')
+  vim.uv.fs_open(histfile, 'a', tonumber('644', 8), function(err, fd)
+    if err then
+      return
+    end
+    vim.uv.fs_write(fd, s .. '\n', -1, function()
+      vim.uv.fs_close(fd)
+    end)
+  end)
+end
+
 local function user_preferred_indent(buf)
   local prefer_tabs = not vim.bo[buf].expandtab
   if prefer_tabs then
@@ -55,13 +74,14 @@ local function run_query(cmd, input, query_buf, output_buf)
   end
 
   local on_exit = function(result)
-    vim.schedule(function ()
+    vim.schedule(function()
       local out = result.code == 0 and result.stdout or result.stderr
       local lines = vim.split(out, "\n", { plain = true })
       vim.api.nvim_buf_set_lines(output_buf, 0, -1, false, lines)
     end)
   end
 
+  log_cmd(cli_args)
   local ok, _ = pcall(vim.system, cli_args, { stdin = stdin }, on_exit)
   if not ok then
     show_error("jq is not installed or not on your $PATH")
