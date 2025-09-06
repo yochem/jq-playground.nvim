@@ -14,12 +14,20 @@ output filetype appropriately.
 
 This plugin requires Nvim 0.10+.
 
-The GitHub repository is at `"yochem/jq-playground.nvim"`. Use that in your
+The GitHub repository is at `'yochem/jq-playground.nvim'`. Use that in your
 package manager. For example with
 [Lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
-{ "yochem/jq-playground.nvim" }
+{ 'yochem/jq-playground.nvim' }
+```
+
+Or the built-in package manager:
+
+```lua
+vim.pack.add({
+    { src = 'https://github.com/yochem/jq-playground.nvim' },
+})
 ```
 
 The plugin is lazy-loaded on `:JqPlayground` and does not require any
