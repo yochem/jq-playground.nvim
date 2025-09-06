@@ -4,7 +4,8 @@
 
 ![Example screenshot](example/screenshot.png)
 
-Like [jqplay.org](https://jqplay.org) or Neovim's builtin Treesitter playground
+Like [play.jqlang.org](https://play.jqlang.org) or Neovim's builtin Treesitter
+playground
 ([`:InspectTree`](https://neovim.io/doc/user/treesitter.html#%3AInspectTree)).
 Also supports YAML via `yq` and or many others if you
 [configure](#configuration) it to use [fq](https://github.com/wader/fq) and set
