@@ -78,10 +78,16 @@ local function resolve_winsize(num, max)
   end
 end
 
-local function create_split_buf(opts)
+local function create_split_buf(opts, before_filetype_callback)
   local buf = vim.fn.bufnr(opts.name)
   if buf == -1 then
     buf = vim.api.nvim_create_buf(true, opts.scratch)
+
+    -- Run callback before setting filetype
+    if before_filetype_callback then
+      before_filetype_callback(buf)
+    end
+
     vim.bo[buf].filetype = opts.filetype
     vim.api.nvim_buf_set_name(buf, opts.name)
   end
@@ -132,7 +138,9 @@ function M.init_playground(filename)
   vim.api.nvim_buf_set_lines(output_buf, 0, -1, false, {})
 
   -- And then query buffer
-  local query_buf, _ = create_split_buf(cfg.query_window)
+  local query_buf, _ = create_split_buf(cfg.query_window, function(new_buf)
+    vim.api.nvim_buf_set_var(new_buf, "parent_bufnr", curbuf)
+  end)
   virt_text_hint(query_buf, "Run your query with <CR>.")
 
   vim.keymap.set({ "n", "i" }, "<Plug>(JqPlaygroundRunQuery)", function()
