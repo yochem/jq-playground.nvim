@@ -108,6 +108,26 @@ directly:
 :JqPlayground sample.json
 ```
 
+## Buffer Variables
+
+The query buffer (jq/yq editor) has access to the following buffer-local variables:
+
+- `vim.b.jqplayground_inputbuf`: Contains the buffer number of the input buffer
+(JSON/YAML file). This variable is set before filetype plugins run, making it
+available in filetype-specific configurations. This can be used in custom
+keymaps to access the original filename or content.
+
+Example usage:
+```lua
+-- In the query buffer, get the input filename
+local input_filename = vim.api.nvim_buf_get_name(vim.b.jqplayground_inputbuf)
+
+-- Build a command string for copying to clipboard
+local query_content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+local cmd = string.format("%s '%s' '%s'", vim.o.filetype, query_content, input_filename)
+vim.fn.setreg("+", cmd)
+```
+
 ## Tips
 
 Some random tips that you may find useful while using this plugin.
