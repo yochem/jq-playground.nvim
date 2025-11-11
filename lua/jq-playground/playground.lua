@@ -55,7 +55,7 @@ local function run_query(cmd, input, query_buf, output_buf)
   end
 
   local on_exit = function(result)
-    vim.schedule(function ()
+    vim.schedule(function()
       local out = result.code == 0 and result.stdout or result.stderr
       local lines = vim.split(out, "\n", { plain = true })
       vim.api.nvim_buf_set_lines(output_buf, 0, -1, false, lines)
@@ -83,7 +83,9 @@ local function create_split_buf(opts, before_filetype_callback)
   if buf == -1 then
     buf = vim.api.nvim_create_buf(true, opts.scratch)
 
-    -- Run callback before setting filetype
+    -- Execute callback before setting filetype to ensure buffer variables are
+    -- available to ftplugin scripts and FileType autocmds that get triggered
+    -- (e.g., for building keymaps that reference the input buffer)
     if before_filetype_callback and vim.is_callable(before_filetype_callback) then
       before_filetype_callback(buf)
     end
