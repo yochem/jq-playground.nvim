@@ -95,7 +95,7 @@ vim.keymap.set("n", "R", "<Plug>(JqPlaygroundRunQuery)")
 
 ## Usage
 
-Navigate to a JSON file, and execute the command `:JqPlayground`. Two scratch
+Navigate to a JSON file, and execute the command `:JqPlayground`. Two
 buffers will be opened: a buffer for the JQ-filter and one for displaying the
 results. Simply press `<CR>` (enter), or your keymap from setup, in the query
 window to refresh the results buffer.
@@ -105,8 +105,14 @@ if the JSON file is very large and you don't want to open it in Neovim
 directly:
 
 ```vim
-:JqPlayground sample.json
+:JqPlayground example.json
 ```
+
+## Buffer Variables
+
+The query buffer has the variable `b:jqplayground_inputbuf` set to the bufnr of
+the input buffer. The variable is available on the `FileType` event and can
+thus be used in buffer-local mappings.
 
 ## Tips
 
