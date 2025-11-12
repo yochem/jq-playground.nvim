@@ -2,29 +2,36 @@ local M = {}
 local ns = vim.api.nvim_create_namespace("jq-playground")
 local augroup = vim.api.nvim_create_augroup("jq-playground", {})
 
+---@param msg string
 local function show_error(msg)
   vim.notify("jq-playground: " .. msg, vim.log.levels.ERROR, {})
 end
 
-local function log_cmd(cmd)
-  -- 2nd and last argument are the query and json filename
-  local args = vim.deepcopy(cmd)
-  args[2] = "'" .. args[2] .. "'"
-  args[#args] = "'" .. args[#args] .. "'"
-  local s = table.concat(args, ' '):gsub('\n', '\\n')
+---@param cmd string
+---@param query string
+---@param flags string[]
+---@param input string?
+local function log_cmd(cmd, query, flags, input)
+  local out = {
+    when = os.time(),
+    cmd = cmd,
+    query = query,
+    flags = flags,
+    input = input or vim.NIL,
+  }
 
-  local dir = vim.fn.stdpath('log')
-  local histfile = vim.fs.joinpath(dir, 'jq-playground_history')
-  vim.uv.fs_open(histfile, 'a', tonumber('644', 8), function(err, fd)
-    if err then
-      return
-    end
-    vim.uv.fs_write(fd, s .. '\n', -1, function()
-      vim.uv.fs_close(fd)
-    end)
-  end)
+  local histfile = vim.fs.joinpath(vim.fn.stdpath('log'), 'jq-playground-history.json')
+  local fd = vim.uv.fs_open(histfile, 'a', tonumber('644', 8))
+  if fd then
+    local line = vim.json.encode(out)
+    vim.uv.fs_write(fd, line .. '\n', -1)
+    vim.uv.fs_close(fd)
+  end
 end
 
+---Convert 'expandtab' and 'tabstop' to jq flags.
+---@param buf integer
+---@return string[]
 local function user_preferred_indent(buf)
   local prefer_tabs = not vim.bo[buf].expandtab
   if prefer_tabs then
@@ -33,32 +40,41 @@ local function user_preferred_indent(buf)
 
   local indent_width = vim.bo[buf].tabstop
   if 0 < indent_width and indent_width < 8 then
-    return { "--indent", indent_width }
+    return { "--indent", tostring(indent_width) }
   end
 
   return {}
 end
 
-local function input_args(input)
-  if type(input) == "string" and vim.fn.filereadable(input) == 1 then
-    return input, nil
+---Convert the input to jq arguments. If the buffer has a name, provide it as
+---file argument. Otherwise the contents as stdin.
+---@param source string|integer
+---@return string?
+---@return string[]?
+local function input_args(source)
+  if type(source) == "string" and vim.fn.filereadable(source) == 1 then
+    return source, nil
   end
 
-  if type(input) == "number" and vim.api.nvim_buf_is_valid(input) then
-    local modified = vim.bo[input].modified
-    local fname = vim.api.nvim_buf_get_name(input)
+  if type(source) == "number" and vim.api.nvim_buf_is_valid(source) then
+    local modified = vim.bo[source].modified
+    local fname = vim.api.nvim_buf_get_name(source)
 
     if (not modified) and fname ~= "" then
       -- the following should be faster as it lets jq read the file contents
       return fname, nil
     else
-      return nil, vim.api.nvim_buf_get_lines(input, 0, -1, false)
+      return nil, vim.api.nvim_buf_get_lines(source, 0, -1, false)
     end
   end
 
-  show_error("invalid input: " .. input)
+  show_error("invalid input: " .. source)
 end
 
+---@param cmd string[]
+---@param input string|integer
+---@param query_buf integer
+---@param output_buf integer
 local function run_query(cmd, input, query_buf, output_buf)
   local cli_args = vim.deepcopy(cmd)
 
@@ -66,31 +82,37 @@ local function run_query(cmd, input, query_buf, output_buf)
   local filter = table.concat(filter_lines, "\n")
   table.insert(cli_args, filter)
 
-  vim.list_extend(cli_args, user_preferred_indent(output_buf))
+  local indent = user_preferred_indent(output_buf)
+  vim.list_extend(cli_args, indent)
 
   local input_filename, stdin = input_args(input)
   if input_filename then
     table.insert(cli_args, input_filename)
   end
 
-  local on_exit = function(result)
-    vim.schedule(function()
-      local out = result.code == 0 and result.stdout or result.stderr
-      local lines = vim.split(out, "\n", { plain = true })
-      vim.api.nvim_buf_set_lines(output_buf, 0, -1, false, lines)
-    end)
-  end
+  local on_exit = vim.schedule_wrap(function(result)
+    local out = result.code == 0 and result.stdout or result.stderr
+    local lines = vim.split(out, "\n", { plain = true })
+    vim.api.nvim_buf_set_lines(output_buf, 0, -1, false, lines)
+  end)
 
-  log_cmd(cli_args)
-  local ok, _ = pcall(vim.system, cli_args, { stdin = stdin }, on_exit)
+  local ok = pcall(vim.system, cli_args, { stdin = stdin }, on_exit)
   if not ok then
-    show_error("jq is not installed or not on your $PATH")
+    show_error(("%s is not installed or not on your $PATH"):format(cli_args[1]))
+    return
   end
+  log_cmd(cmd[1], filter, indent, input_filename)
 end
 
+---Convert relative window size to absolute. Nil is ignored.
+---@param num number
+---@param max integer
+---@return integer?
 local function resolve_winsize(num, max)
-  if num == nil or (1 <= num and num <= max) then
-    return num
+  if num == nil then
+    return nil
+  elseif 1 <= num and num <= max then
+    return math.floor(num)
   elseif 0 < num and num < 1 then
     return math.floor(num * max)
   else
@@ -98,6 +120,10 @@ local function resolve_winsize(num, max)
   end
 end
 
+---Creates a split buffer. Returns bufnr and winid
+---@param opts table fields: name, scratch, filetype, height, width
+---@return integer bufnr of the created buffer
+---@return integer winid of the opened window
 local function create_split_buf(opts)
   local buf = vim.fn.bufnr(opts.name)
   if buf == -1 then
@@ -118,6 +144,9 @@ local function create_split_buf(opts)
   return buf, winid
 end
 
+---Place a hint in a buffer, deleted on InsertEnter and TextChanged
+---@param buf integer
+---@param hint string
 local function virt_text_hint(buf, hint)
   vim.api.nvim_buf_set_extmark(buf, ns, 0, 0, {
     virt_text = { { hint, "Conceal" } },
@@ -134,6 +163,7 @@ local function virt_text_hint(buf, hint)
   })
 end
 
+---@param filename string
 function M.init_playground(filename)
   local cfg = require('jq-playground.config').config
 
@@ -153,7 +183,7 @@ function M.init_playground(filename)
 
   -- And then query buffer
   local query_buf, _ = create_split_buf(cfg.query_window)
-  virt_text_hint(query_buf, "Run your query with <CR>.")
+  virt_text_hint(query_buf, "Press enter to run the query…")
 
   vim.keymap.set({ "n", "i" }, "<Plug>(JqPlaygroundRunQuery)", function()
     run_query(cfg.cmd, filename or curbuf, query_buf, output_buf)
