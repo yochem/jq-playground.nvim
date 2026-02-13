@@ -1,14 +1,14 @@
-*jq-playground.txt*			Interactive `jq` playground in Nvim.
+*jq-playground.txt*				     Interactive jq playground
 
-=============================================================================
-jq-playground						      *jq-playground*
+==============================================================================
+jq-playground						       *jq-playground*
 
 jq-playground allows for interactively running jq queries on json files. It's
 similar to https://play.jqlang.org and |:InspectTree|. It can also be used for
 query programs similar to jq.
 
-=============================================================================
-Configuration		*jq-playground.setup()* *jq-playground-configuration*
+==============================================================================
+Configuration		 *jq-playground.setup()* *jq-playground-configuration*
 
 This plugin can be configured in Lua using its `setup()` method. These are the
 default values: >lua
@@ -53,12 +53,12 @@ default values: >lua
 • `disable_default_keymap`: disables default `<CR>` map in the query window
 
 Open Playground ~
-				      *:JqPlayground* *jq-playground-command*
+				       *:JqPlayground* *jq-playground-command*
 Start the playground with `:JqPlayground`. The current buffer is used as input
 file, unless a filename is provided, e.g. `:JqPlayground file.json`.
 
 Run Query ~
-			     *JqPlaygroundRunQuery* *jq-playground-run-query*
+			      *JqPlaygroundRunQuery* *jq-playground-run-query*
 The query is ran by the buffer-local |<Plug>| mapping
 `<Plug>(JqPlaygroundRunQuery)`. The default is <CR> in normal mode. To remap
 it: >lua
